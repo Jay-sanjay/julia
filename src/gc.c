@@ -1010,7 +1010,7 @@ STATIC_INLINE jl_value_t *jl_gc_big_alloc_inner(jl_ptls_t ptls, size_t sz)
 JL_DLLEXPORT jl_value_t *jl_gc_big_alloc(jl_ptls_t ptls, size_t sz)
 {
     jl_value_t *val = jl_gc_big_alloc_inner(ptls, sz);
-    maybe_record_alloc_to_profile(val, sz, jl_gc_unknown_type_tag);
+    maybe_record_alloc_to_profile(val, sz, jl_gc_unknown_type_tag, JL_big_alloc_unkown);
     return val;
 }
 
@@ -1321,7 +1321,7 @@ JL_DLLEXPORT jl_value_t *jl_gc_pool_alloc(jl_ptls_t ptls, int pool_offset,
                                           int osize)
 {
     jl_value_t *val = jl_gc_pool_alloc_inner(ptls, pool_offset, osize);
-    maybe_record_alloc_to_profile(val, osize, jl_gc_unknown_type_tag);
+    maybe_record_alloc_to_profile(val, osize, jl_gc_unknown_type_tag, JL_alloc_unkown);
     return val;
 }
 
@@ -3734,7 +3734,7 @@ JL_DLLEXPORT void *jl_gc_managed_malloc(size_t sz)
 #endif
     errno = last_errno;
     // jl_gc_managed_malloc is currently always used for allocating array buffers.
-    maybe_record_alloc_to_profile((jl_value_t*)b, sz, (jl_datatype_t*)jl_buff_tag);
+    maybe_record_alloc_to_profile((jl_value_t*)b, sz, (jl_datatype_t*)jl_buff_tag, JL_alloc_new_object);
     return b;
 }
 
@@ -3776,7 +3776,8 @@ static void *gc_managed_realloc_(jl_ptls_t ptls, void *d, size_t sz, size_t olds
     SetLastError(last_error);
 #endif
     errno = last_errno;
-    maybe_record_alloc_to_profile((jl_value_t*)b, sz, jl_gc_unknown_type_tag);
+    // gc_managed_realloc_ is currently used exclusively for resizing array buffers.
+    maybe_record_alloc_to_profile((jl_value_t*)b, sz, (jl_datatype_t*)jl_buff_tag, JL_alloc_resize_buffer);
     return b;
 }
 
