@@ -1010,7 +1010,6 @@ STATIC_INLINE jl_value_t *jl_gc_big_alloc_inner(jl_ptls_t ptls, size_t sz)
 JL_DLLEXPORT jl_value_t *jl_gc_big_alloc(jl_ptls_t ptls, size_t sz)
 {
     jl_value_t *val = jl_gc_big_alloc_inner(ptls, sz);
-    maybe_record_alloc_to_profile(val, sz, jl_gc_unknown_type_tag, JL_big_alloc_unkown);
     return val;
 }
 
@@ -1316,13 +1315,28 @@ STATIC_INLINE jl_value_t *jl_gc_pool_alloc_inner(jl_ptls_t ptls, int pool_offset
     return jl_valueof(v);
 }
 
+// // Instrumented version of jl_gc_pool_alloc_inner, called into by LLVM-generated code.
+// JL_DLLEXPORT jl_value_t *jl_gc_pool_alloc_typed(jl_ptls_t ptls, int pool_offset,
+//                                         int osize, jl_value_t* type, jl_alloc_reason reason)
+// {
+//     jl_value_t *val = jl_gc_pool_alloc_inner(ptls, pool_offset, osize);
+//     jl_set_typeof(val, type);
+//     maybe_record_alloc_to_profile(val, osize, (jl_datatype_t*)type, reason);
+//     return val;
+// }
+
+// Older, deprecated interface, which doesn't provide a type tag.
 // Instrumented version of jl_gc_pool_alloc_inner, called into by LLVM-generated code.
 JL_DLLEXPORT jl_value_t *jl_gc_pool_alloc(jl_ptls_t ptls, int pool_offset,
                                           int osize)
 {
     jl_value_t *val = jl_gc_pool_alloc_inner(ptls, pool_offset, osize);
-    maybe_record_alloc_to_profile(val, osize, jl_gc_unknown_type_tag, JL_alloc_unkown);
     return val;
+}
+JL_DLLEXPORT jl_value_t *jl_maybe_record_alloc_to_profile(jl_value_t* val, int osize,
+                                        jl_value_t* type, jl_alloc_reason reason)
+{
+    maybe_record_alloc_to_profile(val, osize, (jl_datatype_t*)type, reason);
 }
 
 // This wrapper exists only to prevent `jl_gc_pool_alloc_inner` from being inlined into
